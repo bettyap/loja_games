@@ -1,5 +1,6 @@
 package com.generation.lojagames.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.UpdateTimestamp;
@@ -39,7 +40,7 @@ public class Produto {
 	private Categoria categoria;
 	
 	@NotNull(message = "O atributo preço é Obrigatório!")
-	private double preco;
+	private BigDecimal preco;
 	
 	private String foto;
 
@@ -83,11 +84,11 @@ public class Produto {
 		this.lancamento = lancamento;
 	}
 
-	public double getPreco() {
+	public BigDecimal getPreco() {
 		return preco;
 	}
 
-	public void setPreco(double preco) {
+	public void setPreco(BigDecimal preco) {
 		this.preco = preco;
 	}
 
