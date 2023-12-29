@@ -2,7 +2,6 @@ package com.generation.lojagames.controller;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,13 +14,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.generation.lojagames.model.Produto;
 import com.generation.lojagames.repository.CategoriaRepository;
 import com.generation.lojagames.repository.ProdutoRepository;
+import com.generation.lojagames.service.ProdutoService;
 
 import jakarta.validation.Valid;
 
@@ -30,6 +28,9 @@ import jakarta.validation.Valid;
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 
 public class ProdutoController {
+	
+	@Autowired
+	private ProdutoService produtoService;
 	
 	@Autowired
 	private ProdutoRepository produtoRepository;
@@ -46,7 +47,7 @@ public class ProdutoController {
 	public ResponseEntity<Produto> getByID(@PathVariable Long id){
 		return produtoRepository.findById(id)
 			   .map(resposta -> ResponseEntity.ok(resposta))
-			   .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+			   .orElse(ResponseEntity.notFound().build());
 	}
 	
 	@GetMapping("/nome/{nome}")
@@ -54,49 +55,56 @@ public class ProdutoController {
 		return ResponseEntity.ok(produtoRepository.findAllByNomeContainingIgnoreCase(nome));
 	}
 	
+	// Consulta pelo preço menor do que o preço digitado em ordem decrescente
 	@GetMapping("/menorpreco/{preco}")
 	public ResponseEntity<List<Produto>> getByMenor(@PathVariable BigDecimal preco){
 		return ResponseEntity.ok(produtoRepository.findByPrecoLessThan(preco));
 	}
 	
+
+	// Consulta pelo preço maior do que o preço digitado emm ordem crescente
 	@GetMapping("/maiorpreco/{preco}")
 	public ResponseEntity<List<Produto>> getByMaior(@PathVariable BigDecimal preco){
 		return ResponseEntity.ok(produtoRepository.findByPrecoGreaterThan(preco));
 	}
 	
 	@PostMapping
-	public ResponseEntity<Produto> post(@Valid @RequestBody Produto produto) {
-		if(categoriaRepository.existsById(produto.getCategoria().getId())) 
-			return ResponseEntity.status(HttpStatus.CREATED)
-				.body(produtoRepository.save(produto));
+	public ResponseEntity<Produto> postProduto(@Valid @RequestBody Produto produto) {
+		return categoriaRepository.findById(produto.getCategoria().getId())
+				.map(resposta -> ResponseEntity.status(HttpStatus.CREATED).body(produtoRepository.save(produto)))
+				.orElse(ResponseEntity.badRequest().build());
 		
-		throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoria não existe!", null);
 	}
 	
 	@PutMapping
-	public ResponseEntity<Produto> put(@Valid @RequestBody Produto produto) {
-		if(categoriaRepository.existsById(produto.getId())) {
+	public ResponseEntity<Produto> putProduto(@Valid @RequestBody Produto produto) {
+		
+		if(produtoRepository.existsById(produto.getId())) {
 			
-			if(categoriaRepository.existsById(produto.getCategoria().getId()))
-				return ResponseEntity.status(HttpStatus.OK)
-						.body(produtoRepository.save(produto));
-			
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoria não existe!", null);
+			return categoriaRepository.findById(produto.getId())
+					.map(resposta -> ResponseEntity.status(HttpStatus.OK).body(produtoRepository.save(produto)))
+					.orElse(ResponseEntity.badRequest().build());
 		}
 		
-		return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-		
+		return ResponseEntity.notFound().build();
 	}
 	
-	@ResponseStatus(HttpStatus.NO_CONTENT)
 	@DeleteMapping("/{id}")
-	public void delete(@PathVariable Long id) {
-		Optional<Produto> produto = produtoRepository.findById(id);
+	public ResponseEntity<?> deleteProduto(@PathVariable Long id) {
 		
-		if(produto.isEmpty())
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-		
-		produtoRepository.deleteById(id);
+		return produtoRepository.findById(id)
+				.map(resposta -> {
+					produtoRepository.deleteById(id);
+					return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+				})
+				.orElse(ResponseEntity.notFound().build());
+	}
+	
+	@PutMapping("curtir/{id}")
+	public ResponseEntity<Produto> curtir(@PathVariable Long id){
+		return produtoService.curtir(id)
+				.map(resposta -> ResponseEntity.ok(resposta))
+				.orElse(ResponseEntity.badRequest().build());
 	}
 	
 	

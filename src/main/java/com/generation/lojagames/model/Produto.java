@@ -5,8 +5,10 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 @Entity
 @Table(name = "tb_produtos")
@@ -32,17 +35,24 @@ public class Produto {
 	@NotNull(message = "O atributo Console é obrigatório")
 	private String console;
 	
+	@Column(name = "data_lancamento")
+	@JsonFormat(pattern = "yyyy-MM-dd")
 	@UpdateTimestamp
 	private LocalDateTime lancamento;
+	
+	@JsonFormat(shape = JsonFormat.Shape.STRING)
+	@NotNull(message = "O atributo preço é Obrigatório!")
+	@Positive(message = "O preço deve ser maior do que zero!")
+	private BigDecimal preco;
+	
+	private String foto;
+	
+	@Column(columnDefinition = "integer default 0")
+	private int curtir;
 	
 	@ManyToOne
 	@JsonIgnoreProperties("produto")
 	private Categoria categoria;
-	
-	@NotNull(message = "O atributo preço é Obrigatório!")
-	private BigDecimal preco;
-	
-	private String foto;
 
 	public Long getId() {
 		return id;
@@ -106,6 +116,14 @@ public class Produto {
 
 	public void setCategoria(Categoria categoria) {
 		this.categoria = categoria;
+	}
+
+	public int getCurtir() {
+		return curtir;
+	}
+
+	public void setCurtir(int curtir) {
+		this.curtir = curtir;
 	}
 	
 }
